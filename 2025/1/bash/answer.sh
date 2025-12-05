@@ -3,59 +3,44 @@
 input_file=../input.txt
 #input_file=../input_test.txt
 
-current_pos=50
-zeros=0
+CURRENT_POSITION=50
+NEW_POSITION=0
+ZEROES=0
 
-count_crosses() {
-	local CLICKS=$1
-	local CROSSES=$((clicks / 100))
-	((ZEROES += CROSSES))
-}
-
-move() {
+move_remainder() {
 	local CURRENT=$1
 	local DIRECTION=$2
 	local CLICKS=$3
+	case "$DIRECTION" in 
+		"L") NEW_POSITION=$((CURRENT - CLICKS)) ;;
+		"R") NEW_POSITION=$((CURRENT + CLICKS)) ;;
+		*) return 1 ;;
+	esac
+	if [[ $NEW_POSITION -eq 0 || $NEW_POSITION -eq 100 ]]; then
+		NEW_POSITION=0
+		((ZEROES++))
+	elif [[ $NEW_POSITION -lt 0 ]]; then
+		NEW_POSITION=$((NEW_POSITION + 100))
+		if [[ $CURRENT_POSITION -ne 0 ]]; then
+			((ZEROES++))
+		fi
+	elif [[ $NEW_POSITION -gt 100 ]]; then
+		NEW_POSITION=$((NEW_POSITION - 100))
+		if [[ $CURRENT_POSITION -ne 0 ]]; then
+			((ZEROES++))
+		fi
+	fi
 }
 
-for i in `cat $input_file`; do 
+# for i in `cat $input_file`; do 
+while IFS=\n read -r i; do
 	direction=${i:0:1}
 	clicks=${i:1:3}
-	crosses=$((clicks / 100))
-	if [[ "$crosses" -gt 0 ]]; then
-		"Passed zero $crosses times"
-		((zeros += crosses))
-	fi
-	moves=$((clicks % 100))
-	case "$direction" in 
-		"L")
-			new_pos=$((current_pos - moves))
-			;;
-		"R")
-			new_pos=$((current_pos + moves))
-			;;
-		*)
-			echo "You shouldnt be here"
-			exit 1
-			;;
-	esac
-	if [[ $new_pos -eq 0 || $new_pos -eq 100 ]]; then
-		new_pos=0
-		((zeros++))
-	elif [[ $new_pos -lt 0 ]]; then
-		new_pos=$((new_pos + 100))
-		if [[ $current_pos -ne 0 ]]; then
-			((zeros++))
-		fi
-	elif [[ $new_pos -gt 100 ]]; then
-		new_pos=$((new_pos - 100))
-		if [[ $current_pos -ne 0 ]]; then
-			((zeros++))
-		fi
-	fi
-	echo "[$i] Previous: $current_pos | New position: $new_pos | Zeros: $zeros"
-	echo "-----------------------------------------------"
-	current_pos=$new_pos
-done
+	((ZEROES += clicks / 100 ))
+	move_remainder $CURRENT_POSITION $direction $((clicks % 100))
+	echo "[$i] Previous: $CURRENT_POSITION | New: $NEW_POSITION | Zeros: $ZEROES"
+	echo "------------------------------------------"
+	CURRENT_POSITION=$NEW_POSITION
+done < "$input_file"
 
-echo "Code is: $zeros"
+echo "Code is: $ZEROES"
